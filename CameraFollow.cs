@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
-// test
+
 public class CameraFollow : MonoBehaviour {
 
     private Vector2 velocity;
