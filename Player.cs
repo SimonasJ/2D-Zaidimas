@@ -42,7 +42,8 @@ public class Player : Character
     private GameMaster2 gm;
     private bool attack;
     private bool jumpAttack;
-    // private GameObject knifePrefab;
+	private int value;
+	private int who;
     //--------------------------------------------------------------------------------------------------
     public override void Start()
     {
@@ -55,22 +56,20 @@ public class Player : Character
     //--------------------------------------------------------------------------------------------------
     void Update()
     {
-        if (transform.position.y <= -14f)
+		if (gm.health < 0)
+			gm.health = 0;
+		if (transform.position.y <= -14f)
         {
             MyRigidbody.velocity = Vector2.zero;
             transform.position = startPos;
         }
-        if (transform.position.y <= -7f)
-        {
-            Application.LoadLevel("gameover");
-        }
-        HandleInput();
+		OnGround = IsGrounded();
+		HandleInput();
     }
     //--------------------------------------------------------------------------------------------------
     void FixedUpdate()
     {
-        float horizontal = Input.GetAxis("Horizontal");
-        OnGround = IsGrounded();
+        float horizontal = Input.GetAxis("Horizontal");    
         HandleMovement(horizontal);
         Flip(horizontal);
         HandleLayers();
@@ -82,7 +81,7 @@ public class Player : Character
     {
         get
         { 
-        return gm.health <= 0; 
+        	return gm.health <= 0; 
         }
     }
     //--------------------------------------------------------------------------------------------------
@@ -92,7 +91,9 @@ public class Player : Character
         {
             if (!IsDead && !immortal)
             {
-                StartCoroutine(TakeDamage());
+				who = 0;
+				gm.health -= 10;
+				StartCoroutine(TakeDamage());
             }
         }
     }
@@ -101,11 +102,11 @@ public class Player : Character
     {
         if (!immortal)
         {
-            gm.health -= 10;
             if (!IsDead)
             {
                 myAnimator.SetTrigger("damage");
-                MyRigidbody.AddForce(new Vector2(1, 600));
+				if(who == 0)
+					MyRigidbody.AddForce(new Vector2(1, 600));
                 immortal = true;
                 StartCoroutine(IndicateImmortal());
                 yield return new WaitForSeconds(immortalTime);
@@ -119,48 +120,12 @@ public class Player : Character
                 Application.LoadLevel("gameover");
             }
         }
-    }
-    //--------------------------------------------------------------------------------------------------
-    private void HandleInput()
-    {
-        if (!IsDead)
-        {
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                Jump = true;
-            }
-            if (Input.GetKeyDown(KeyCode.DownArrow))    //(KeyCode.LeftControl)) 
-            {
-                myAnimator.SetBool("slide", true);
-            }
-            else
-                myAnimator.SetBool("slide", false);
-            if (Input.GetKeyDown(KeyCode.V))
-            {
-                myAnimator.SetTrigger("suvis");
-                ThrowKnife(0);
-            }
-            if (Input.GetKeyDown(KeyCode.LeftShift))
-            {
-                attack = true;
-                jumpAttack = true;
-            }
-        }
-    }
-    //--------------------------------------------------------------------------------------------------
+	}
+	//--------------------------------------------------------------------------------------------------
     private void HandleMovement(float horizontal)
     {
         if (!IsDead)
         {
-
-            if (jumpAttack && !OnGround && !this.myAnimator.GetCurrentAnimatorStateInfo(1).IsName("M_ataka"))
-            {
-                myAnimator.SetBool("jumpAttack", true);
-            }
-            if (!jumpAttack && !OnGround && !this.myAnimator.GetCurrentAnimatorStateInfo(1).IsName("M_ataka"))
-            {
-                myAnimator.SetBool("jumpAttack", false);
-            }
             if (MyRigidbody.velocity.y < 0)
             {
                 myAnimator.SetBool("land", true);
@@ -183,27 +148,63 @@ public class Player : Character
                 myAnimator.SetTrigger("jump");
                 JumpNr++;
             }
-            if (!this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Attack"))
+			if (!this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Attack") && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Suvis") && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("JumpAttack"))
             {
                 MyRigidbody.velocity = new Vector2(horizontal * movementSpeed, MyRigidbody.velocity.y);
             }
-            if (!Attack && !Slide && (OnGround || airControl) && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Attack"))
+			if (!Attack && !Slide && (OnGround || airControl) && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Attack") && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Suvis"))
             {
                 MyRigidbody.velocity = new Vector2(horizontal * movementSpeed, MyRigidbody.velocity.y);
             }
             myAnimator.SetFloat("speed", Mathf.Abs(horizontal));
         }
     }
-    //--------------------------------------------------------------------------------------------------
-    private void HandleAttacks()
-    {
-        if (attack && OnGround && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Attack"))
-        {
-            myAnimator.SetTrigger("attack");
-            MyRigidbody.velocity = Vector2.zero;
-        }
-    }
-    //--------------------------------------------------------------------------------------------------			
+    //--------------------------------------------------------------------------------------------------		
+	private void HandleAttacks()
+	{
+		if (attack && OnGround && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Attack") && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("JumpAttack"))
+		{
+			myAnimator.SetTrigger("attack");
+			MyRigidbody.velocity = Vector2.zero;
+		}
+		if (jumpAttack && !OnGround && !this.myAnimator.GetCurrentAnimatorStateInfo(1).IsName("M_jumpataka"))
+		{
+			myAnimator.SetBool("jumpAttack", true);
+		}
+		if (!jumpAttack && !this.myAnimator.GetCurrentAnimatorStateInfo(1).IsName("M_jumpataka"))
+		{
+			myAnimator.SetBool("jumpAttack", false);
+		}
+	}
+	//--------------------------------------------------------------------------------------------------
+	private void HandleInput()
+	{
+		if (!IsDead)
+		{
+			if (Input.GetKeyDown(KeyCode.Space))
+			{
+				Jump = true;
+			}
+			if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+			{
+				myAnimator.SetBool("slide", true);
+			}
+			else
+				myAnimator.SetBool("slide", false);
+			if (Input.GetKeyDown(KeyCode.V))
+			{
+					myAnimator.SetTrigger ("suvis");
+					if (OnGround)
+						MyRigidbody.velocity = Vector2.zero;
+			}
+			if (Input.GetKeyDown(KeyCode.LeftShift))
+			{
+				attack = true;
+				jumpAttack = true;
+			}
+		}
+	}
+	//--------------------------------------------------------------------------------------------------
     private void Flip(float horizontal)
     {
         if (!IsDead && !this.myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("Attack"))
@@ -258,22 +259,64 @@ public class Player : Character
 
     }
     //--------------------------------------------------------------------------------------------------
-    /*public /*override*/
-    /* void ThrowKnife(int value)
-{
-
-if (!OnGround && value == 1 || OnGround && value == 0)
-{
-base.ThrowKnife (value);
-}
-}*/
-    //--------------------------------------------------------------------------------------------------
     void OnTriggerEnter2D(Collider2D col)
     {
         if (col.CompareTag("Coins"))
         {
             Destroy(col.gameObject);
             gm.points += 1;
+            if (gm.points % 20 == 0 && gm.points != 0)
+                gm.health += 5;
+        }
+        if (col.CompareTag("EnemyKnife"))
+        {
+            if (!IsDead && !immortal)
+            {
+                who = 1;
+                gm.health -= 10;
+                Destroy(col.gameObject);
+                StartCoroutine(TakeDamage());
+            }
+        }
+        if (col.CompareTag("BossEnemyKnife"))
+        {
+            if (!IsDead && !immortal)
+            {
+                who = 1;
+                gm.health -= 15;
+                Destroy(col.gameObject);
+                StartCoroutine(TakeDamage());
+            }
+        }
+        if (col.CompareTag("EnemyMelee"))
+        {
+            if (!IsDead && !immortal)
+            {
+                who = 1;
+                gm.health -= 10;
+                StartCoroutine(TakeDamage());
+            }
+        }
+        if (col.CompareTag("BossEnemyMelee"))
+        {
+            if (!IsDead && !immortal)
+            {
+                who = 1;
+                gm.health -= 15;
+                StartCoroutine(TakeDamage());
+            }
+        }
+        if (col.CompareTag("Ending0"))
+        {
+            Application.LoadLevel("2_Ziema_IV");
+        }
+        if (col.CompareTag("Ending1"))
+        {
+            Application.LoadLevel("3_Miskas");
+        }
+        if (col.CompareTag("Ending2"))
+        {
+            Application.LoadLevel("Winner");
         }
     }
     //--------------------------------------------------------------------------------------------------
@@ -287,10 +330,12 @@ base.ThrowKnife (value);
             yield return new WaitForSeconds(.15f);
         }
     }
-
+	//--------------------------------------------------------------------------------------------------
     internal static float GetFlost(string p)
     {
         throw new NotImplementedException();
     }
+
+
 }
 //--------------------------------------------------------------------------------------------------

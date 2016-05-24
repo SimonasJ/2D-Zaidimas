@@ -25,7 +25,9 @@ public class Knife : MonoBehaviour
 //-------------------------------------------------------------------------------------------------
 	void OnBecameInvisible()
 	{
+		if(gameObject.CompareTag("PlayerKnife") || gameObject.CompareTag("EnemyKnife") || gameObject.CompareTag("BossEnemyKnife"))
 		Destroy (gameObject);
 	}
+	
 //-------------------------------------------------------------------------------------------------
 }

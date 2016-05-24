@@ -4,7 +4,6 @@ using System;
 
 public abstract class Character : MonoBehaviour 
 {
-	//protected Animator myAnimator;
     public Animator myAnimator { get; private set; }
 	[SerializeField]
 	protected Transform knifePos;
@@ -16,9 +15,12 @@ public abstract class Character : MonoBehaviour
 	public bool Attack { get; set;}
 	[SerializeField]
 	protected int health;
+	[SerializeField]
+	private EdgeCollider2D MeleeCollider;
+	[SerializeField]
+	public bool boss = false;
 	public abstract bool IsDead { get; }
     public bool TakingDamage { get; set; }
-
 
  //-------------------------------------------------------------------------------------------------
 	public virtual void Start () 
@@ -37,31 +39,42 @@ public abstract class Character : MonoBehaviour
 	public void ChangeDirection()
 	{
 		facingRight = !facingRight;
-		transform.localScale = new Vector3 (transform.localScale.x * -1, 1, 1);
+		if(boss)
+			transform.localScale = new Vector3 (transform.localScale.x * -1, 2, 1);
+		else
+			transform.localScale = new Vector3 (transform.localScale.x * -1, 1, 1);
+
 	}
 //-------------------------------------------------------------------------------------------------
     public void ThrowKnife(int value)
 	{
-		if (facingRight) 
-		{
-			GameObject tmp = (GameObject)Instantiate (knifePrefab, transform.position, Quaternion.Euler(new Vector3(0,0,0)));
-			tmp.GetComponent<Knife>().Initialize (Vector2.right);
-		} 
-		else
-		{
-            GameObject tmp = (GameObject)Instantiate(knifePrefab, transform.position, Quaternion.Euler(new Vector3(0, 0, 180)));
-			tmp.GetComponent<Knife>().Initialize (Vector2.left);
-		}
+			if (facingRight) {
+				GameObject tmp = (GameObject)Instantiate (knifePrefab, knifePos.position, Quaternion.Euler (new Vector3 (0, 0, 0)));
+				tmp.GetComponent<Knife> ().Initialize (Vector2.right);
+			} else {
+				GameObject tmp = (GameObject)Instantiate (knifePrefab, knifePos.position, Quaternion.Euler (new Vector3 (0, 0, 180)));
+				tmp.GetComponent<Knife> ().Initialize (Vector2.left);
+
+			}
+	}
+//-------------------------------------------------------------------------------------------------
+	public void MeleeAttack()
+	{
+		MeleeCollider.enabled = !MeleeCollider.enabled;
+	}
+//-------------------------------------------------------------------------------------------------
+	public void DieCollider()
+	{
+		MeleeCollider.enabled = false;
 	}
 //-------------------------------------------------------------------------------------------------
     public virtual void OnTriggerEnter2D(Collider2D other)
     {
         if (other.tag == "PlayerKnife")
         {
-            StartCoroutine(TakeDamage());
+			Destroy(other.gameObject);
+			StartCoroutine(TakeDamage());
         }
     }
-    
-    
-    
+
 }

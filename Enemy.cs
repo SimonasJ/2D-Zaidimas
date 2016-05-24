@@ -6,10 +6,8 @@ public class Enemy : Character
 {
     private IEnemyState currentState;
     public GameObject Target { get; set; }
-    [SerializeField]
-    private float meleeRange;
-    [SerializeField]
-    private float throwRange;
+    private float meleeRange = 4;
+    private float throwRange = 12;
 //-------------------------------------------------------------------------------------------------  
     public bool InMeleeRange
     {
@@ -50,7 +48,11 @@ public class Enemy : Character
     {
         base.Start();
         ChangeState(new IdleState());
-	
+		if (boss) {
+			meleeRange = 7;
+			health = 50;
+			meleeRange = 15;
+		}
 	}
 //-------------------------------------------------------------------------------------------------
 	void Update () 
@@ -90,7 +92,7 @@ public class Enemy : Character
 //-------------------------------------------------------------------------------------------------
     public void Move()
     {
-        if (!Attack)
+		if (!Attack && !myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("R_Attack") && !myAnimator.GetCurrentAnimatorStateInfo(0).IsTag("R_Suvis"))
         {
             myAnimator.SetFloat("speed", 1);
 
@@ -120,7 +122,8 @@ public class Enemy : Character
         }
         else
         {
-            myAnimator.SetTrigger("die");
+			DieCollider ();
+			myAnimator.SetTrigger("die");
             yield return null; 
         }
     }
